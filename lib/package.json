@@ -1,0 +1,27 @@
+{
+  "name": "uiad",
+  "version": "0.1.0",
+  "description": "User Interfaces As Data",
+  "main": "index.mjs",
+  "types": "index.d.mts",
+  "scripts": {
+    "test": "bash generate-test-html.bash && bash open-test-html.bash",
+    "test-gen": "bash generate-test-html.bash"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0scarB/uiad.git"
+  },
+  "keywords": [
+    "web",
+    "ui",
+    "reactivity",
+    "minimal"
+  ],
+  "author": "Oscar Butler-Aldridge",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/0scarB/uiad/issues"
+  },
+  "homepage": "https://github.com/0scarB/uiad#readme"
+}
