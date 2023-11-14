@@ -420,8 +420,13 @@ export function createElement<
 >>
 
 
-// Values
-// ======
+// Reactivity
+// ==========
+
+type ReactiveErrKind =
+    "CannotSetReadOnly"
+
+type ReactiveResult<T> = Result<T, ReactiveErrKind>
 
 export interface Reactive<T> {
     isReadOnly(): boolean
@@ -432,8 +437,8 @@ export interface Reactive<T> {
 
 export interface ReactiveValue<T> extends Reactive<T> {
     get(): T
-    set(newValue: T): boolean,
-    update(transform: (oldValue: T) => T): boolean,
+    set(newValue: T): ReactiveResult<Reactive<T>>,
+    update(transform: (oldValue: T) => T): ReactiveResult<Reactive<T>>,
 }
 
 export function readOnlyReactiveValue<T>(
@@ -465,3 +470,40 @@ export function reactiveElement<
     element: Element,
     unsubscribeFromData: ReturnType<Reactive<T>["subscribe"]>
 }
+
+
+// Utilities
+// =========
+
+export type Ok<OkValue> = {
+    ok: OkValue,
+    errKind: null,
+    errMsg: null,
+}
+
+export type Err<ErrKind extends string = string> = {
+    ok: null,
+    errKind: ErrKind,
+    errMsg: string,
+}
+
+export type Result<
+    OkValue,
+    ErrKind extends string = string,
+> = Ok<OkValue> | Err<ErrKind>
+
+export function ok<OkValue>(value: OkValue): Ok<OkValue>
+
+export function err<ErrKind extends string = string>(
+    kind: ErrKind,
+    msg: string,
+): Err<ErrKind>
+
+export function isOk<OkValue>(
+    result: Result<OkValue, string>
+): result is Ok<OkValue>
+
+
+export function isErr<ErrKind extends string>(
+    result: Result<any, ErrKind>
+): result is Err<ErrKind>

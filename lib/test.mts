@@ -4,6 +4,7 @@ import {
     createElement, 
     readWriteReactiveValue, 
     reactiveElement,
+    isErr,
 } from "./index.mjs"
 
 function test() {
@@ -224,8 +225,9 @@ function test() {
             const body = document.getElementsByTagName("body")[0]
 
             const {el: counterEl, count} = createCounter(3)
-            if (!count.set(10)) {
-                console.log("Cant mutate because read only!")
+            const setResult = count.set(10)
+            if (isErr(setResult)) {
+                console.log(`${setResult.errKind}: ${setResult.errMsg}`)
             }
             body.appendChild(counterEl)
             body.appendChild(reactiveElement(
