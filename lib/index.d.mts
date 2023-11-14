@@ -1,3 +1,6 @@
+// DOM Creation
+// ============
+
 // TypeScript Doc for .d.ts files: 
 //  https://www.typescriptlang.org/docs/handbook/declaration-files/templates/module-d-ts.html
 
@@ -415,3 +418,46 @@ export function createDOM<
     ChildTagName,
     ChildExtraAttributeValue
 >>
+
+
+// Values
+// ======
+
+export interface Value<T> {
+    isReadOnly(): boolean
+    isWritable(): boolean
+    get(): T
+    set(newValue: T): boolean
+    refAsReadOnly(): Value<T>
+    subscribe(onChange: (value: T) => unknown): (() => void)
+}
+
+export function readOnly<T>(value: T | Value<T>): Value<T>
+
+export function readWrite<T>(value: T | Value<T>): Value<T>
+
+export function rerenderOnValueChange<
+    T,
+    RenderedTagName extends string = HTMLTagName,
+    RenderedExtraAttributeValue extends WithToString = WithToString,
+    RenderedChildTagName extends string = HTMLTagName | RenderedTagName,
+    RenderedChildExtraAttributeValue extends WithToString = WithToString | RenderedExtraAttributeValue,
+    ParentTagName extends string = HTMLTagName,
+    ParentExtraAttributeValue extends WithToString = WithToString,
+    ParentChildTagName extends string = HTMLTagName | ParentTagName,
+    ParentChildExtraAttributeValue extends WithToString = WithToString | ParentExtraAttributeValue,
+>(
+    value: Value<T>,
+    parentElement: DOMNodeSpec<
+        ParentTagName,
+        ParentExtraAttributeValue,
+        ParentChildTagName,
+        ParentChildExtraAttributeValue
+    >,
+    render: (value: T) => DOMNodeSpec<
+        RenderedTagName,
+        RenderedExtraAttributeValue,
+        RenderedChildTagName,
+        RenderedChildExtraAttributeValue
+    >
+): Element

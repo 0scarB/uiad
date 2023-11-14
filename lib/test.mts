@@ -1,4 +1,4 @@
-import {DOMElementSpec, createDOM} from "./index.mjs"
+import {DOMElementSpec, Value, createDOM, readWrite, rerenderOnValueChange} from "./index.mjs"
 
 function test() {
     describe("createDOM", () => {
@@ -176,6 +176,60 @@ function test() {
             )
             const nativeElementPassthrough = createDOM(
                 document.createTextNode("test")
+            )
+        })
+    })
+    describe("rerenderOnValueChange", () => {
+        it("should work for counter example", () => {
+            const createCounter = (
+                count: number | Value<number>,
+            ): {
+                count: Value<number>,
+                el: Element,
+            } => {
+                const reactiveCount =
+                    typeof count === "number"
+                        ? readWrite(count)
+                        : count
+
+                const displayEl = createDOM(["span"])
+                rerenderOnValueChange(
+                    reactiveCount,
+                    displayEl,
+                    (count) => count.toString()
+                )
+
+                const el = createDOM(
+                    ["div", [
+                        displayEl,
+                        ["div", [
+                            ["button", {
+                                onclick: () => reactiveCount.set(reactiveCount.get() - 1)
+                            }, ["Decrement"]],
+                            ["button", {
+                                onclick: () => reactiveCount.set(0)
+                            }, ["Reset"]],
+                            ["button", {
+                                onclick: () => reactiveCount.set(reactiveCount.get() + 1)
+                            }, ["Increment"]],
+                        ]]
+                    ]]
+                )
+
+                return {el, count: reactiveCount.refAsReadOnly()}
+            }
+
+            const body = document.getElementsByTagName("body")[0]
+
+            const {el: counterEl, count} = createCounter(3)
+            if (!count.set(10)) {
+                console.log("Cant mutate because read only!")
+            }
+            body.appendChild(counterEl)
+            rerenderOnValueChange(
+                count,
+                body,
+                (count) => ["span", ["Double count: ", (2*count).toString()]]
             )
         })
     })
