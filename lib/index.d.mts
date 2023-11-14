@@ -401,8 +401,8 @@ export type DOMNodeCreator<
     ) => Element
 ) 
 
-export function createDOM(spec: string): Node
-export function createDOM<
+export function createElement(spec: string): Node
+export function createElement<
     TagName extends string = HTMLTagName,
     ExtraAttributeValue extends WithToString = WithToString,
     ChildTagName extends string = HTMLTagName | TagName,
@@ -423,41 +423,45 @@ export function createDOM<
 // Values
 // ======
 
-export interface Value<T> {
+export interface Reactive<T> {
     isReadOnly(): boolean
     isWritable(): boolean
-    get(): T
-    set(newValue: T): boolean
-    refAsReadOnly(): Value<T>
+    refAsReadOnly(): ReactiveValue<T>
     subscribe(onChange: (value: T) => unknown): (() => void)
 }
 
-export function readOnly<T>(value: T | Value<T>): Value<T>
+export interface ReactiveValue<T> extends Reactive<T> {
+    get(): T
+    set(newValue: T): boolean,
+    update(transform: (oldValue: T) => T): boolean,
+}
 
-export function readWrite<T>(value: T | Value<T>): Value<T>
+export function readOnlyReactiveValue<T>(
+    value: T | ReactiveValue<T>
+): ReactiveValue<T>
 
-export function rerenderOnValueChange<
+export function readWriteReactiveValue<T>(
+    value: T | ReactiveValue<T>
+): ReactiveValue<T>
+
+export function reactiveElement<
     T,
-    RenderedTagName extends string = HTMLTagName,
-    RenderedExtraAttributeValue extends WithToString = WithToString,
-    RenderedChildTagName extends string = HTMLTagName | RenderedTagName,
-    RenderedChildExtraAttributeValue extends WithToString = WithToString | RenderedExtraAttributeValue,
-    ParentTagName extends string = HTMLTagName,
-    ParentExtraAttributeValue extends WithToString = WithToString,
-    ParentChildTagName extends string = HTMLTagName | ParentTagName,
-    ParentChildExtraAttributeValue extends WithToString = WithToString | ParentExtraAttributeValue,
+    TagName extends string = HTMLTagName,
+    ExtraAttributeValue extends WithToString = WithToString,
+    ChildTagName extends string = HTMLTagName | TagName,
+    ChildExtraAttributeValue extends WithToString = WithToString | ExtraAttributeValue,
 >(
-    value: Value<T>,
-    parentElement: DOMNodeSpec<
-        ParentTagName,
-        ParentExtraAttributeValue,
-        ParentChildTagName,
-        ParentChildExtraAttributeValue
+    reactiveData: Reactive<T>,
+    render: (data: T) => DOMNodeSpec<
+        TagName,
+        ExtraAttributeValue,
+        ChildTagName,
+        ChildExtraAttributeValue
     >,
-    render: (value: T) => DOMNodeSpec<
-        RenderedTagName,
-        RenderedExtraAttributeValue,
-        RenderedChildTagName,
-        RenderedChildExtraAttributeValue
-    >
-): Element
+    options?: {
+        initialElement?: Node | "fromRender",
+    }
+): {
+    element: Element,
+    unsubscribeFromData: ReturnType<Reactive<T>["subscribe"]>
+}

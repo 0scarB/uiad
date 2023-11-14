@@ -1,18 +1,24 @@
-import {DOMElementSpec, Value, createDOM, readWrite, rerenderOnValueChange} from "./index.mjs"
+import {
+    DOMElementSpec, 
+    ReactiveValue, 
+    createElement, 
+    readWriteReactiveValue, 
+    reactiveElement,
+} from "./index.mjs"
 
 function test() {
-    describe("createDOM", () => {
+    describe("createElement", () => {
         it("should create text nodes", () => {
-            const el = createDOM("test") 
+            const el = createElement("test") 
             assertTrue(el instanceof Node)
         })
         it("should create empty elements", () => {
-            const el = createDOM(["div"])
+            const el = createElement(["div"])
             assertEqual(el.tagName, "DIV")
             assertTrue(el instanceof Element)
         })
         it("should create elements just with attributes", () => {
-            const el = createDOM(["canvas", {width: 100, height: "100"}])
+            const el = createElement(["canvas", {width: 100, height: "100"}])
             assertEqual(el.tagName, "CANVAS")
             assertTrue(el.hasAttribute("width"))
             assertTrue(el.hasAttribute("height"))
@@ -20,7 +26,7 @@ function test() {
             assertEqual(el.getAttribute("height"), "100")
         })
         it("should create elements just with children", () => {
-            const el = createDOM(
+            const el = createElement(
                 ["ol", [
                     ["li", ["item1"]],
                     ["li", ["item2"]],
@@ -33,7 +39,7 @@ function test() {
             assertEqual(el.children[1].innerHTML, "item2")
         })
         it("should create elements with attributes and children", () => {
-            const el = createDOM(
+            const el = createElement(
                 ["ol", {width: 100, height: "100"}, [
                     ["li", ["item1"]],
                     ["li", ["item2"]],
@@ -50,13 +56,13 @@ function test() {
             assertEqual(el.children[1].innerHTML, "item2")
         })
         it("should join the classes attribute to class", () => {
-            const el = createDOM(["div", {classes: ["class1", "class2"]}])
+            const el = createElement(["div", {classes: ["class1", "class2"]}])
             assertEqual(el.getAttribute("class"), "class1 class2")
             assertEqual(el.classList[0], "class1")
             assertEqual(el.classList[1], "class2")
         })
         it("should serialize the style attribute when passed as an object", () => {
-            const el = createDOM(
+            const el = createElement(
                 ["div", {
                     style: {
                         color: "hotpink", 
@@ -68,7 +74,7 @@ function test() {
         })
         it("should add event listeners for attributes starting with 'on'", () => {
             let count = 0 
-            const el = createDOM(
+            const el = createElement(
                 ['button', {
                     onclick: () => count++
                 }, ["increment"]]
@@ -87,12 +93,12 @@ function test() {
         it("should work for inc/dec/reset example", () => {
             const counter = (): DOMElementSpec => {
                 let count = 0
-                let displayText = createDOM(`${count}`)
-                const display = createDOM(
+                let displayText = createElement(`${count}`)
+                const display = createElement(
                     ["span", {id: "display"}, [displayText]]
                 )
                 const updateDisplay = () => {
-                    const newDisplayText = createDOM(`${count}`)
+                    const newDisplayText = createElement(`${count}`)
                     display.replaceChild(newDisplayText, displayText)
                     displayText = newDisplayText
                 }
@@ -123,7 +129,7 @@ function test() {
             }
 
             const body = document.getElementsByTagName("body")[0]
-            const counterEl = createDOM(counter)
+            const counterEl = createElement(counter)
             body.appendChild(counterEl)
             const displayEl = document.getElementById("display")
             const incBtnEl = document.getElementById("inc-btn")
@@ -152,29 +158,29 @@ function test() {
             body.removeChild(counterEl)
         })
         it("should work with the examples from the README", () => {
-            const textNode = createDOM("text")
-            const emptyElement = createDOM(["div"])
-            const elementWithChildren = createDOM(
+            const textNode = createElement("text")
+            const emptyElement = createElement(["div"])
+            const elementWithChildren = createElement(
                 ["ol", [
                     ["li", ["item 1."]],
                     ["li", ["item 2."]],
                 ]]
             )
-            const elementWithAttributes = createDOM(
+            const elementWithAttributes = createElement(
                 ["canvas", {width: 100, height: "100px"}]
             )
-            const styleAttributeCanBeAnObject = createDOM(
+            const styleAttributeCanBeAnObject = createElement(
                 ["span", {style: {
                     color: "hotpink", 
                     "font-family": "Comic Sans",
                 }}, ["beautiful text"]]
             )
-            const elementWithEventListener = createDOM(
+            const elementWithEventListener = createElement(
                 ["button", {
                     onclick: () => alert("I'm sorry, Dave.")
                 }, ["Decline Cookies"]]
             )
-            const nativeElementPassthrough = createDOM(
+            const nativeElementPassthrough = createElement(
                 document.createTextNode("test")
             )
         })
@@ -182,35 +188,31 @@ function test() {
     describe("rerenderOnValueChange", () => {
         it("should work for counter example", () => {
             const createCounter = (
-                count: number | Value<number>,
+                count: number | ReactiveValue<number>,
             ): {
-                count: Value<number>,
+                count: ReactiveValue<number>,
                 el: Element,
             } => {
                 const reactiveCount =
                     typeof count === "number"
-                        ? readWrite(count)
+                        ? readWriteReactiveValue(count)
                         : count
 
-                const displayEl = createDOM(["span"])
-                rerenderOnValueChange(
-                    reactiveCount,
-                    displayEl,
-                    (count) => count.toString()
-                )
-
-                const el = createDOM(
+                const el = createElement(
                     ["div", [
-                        displayEl,
+                        reactiveElement(
+                            reactiveCount,
+                            (count) => ["span", ["Count: ", count.toString()]]
+                        ).element,
                         ["div", [
                             ["button", {
-                                onclick: () => reactiveCount.set(reactiveCount.get() - 1)
+                                onclick: () => reactiveCount.update(count => --count)
                             }, ["Decrement"]],
                             ["button", {
                                 onclick: () => reactiveCount.set(0)
                             }, ["Reset"]],
                             ["button", {
-                                onclick: () => reactiveCount.set(reactiveCount.get() + 1)
+                                onclick: () => reactiveCount.update(count => ++count)
                             }, ["Increment"]],
                         ]]
                     ]]
@@ -226,11 +228,10 @@ function test() {
                 console.log("Cant mutate because read only!")
             }
             body.appendChild(counterEl)
-            rerenderOnValueChange(
+            body.appendChild(reactiveElement(
                 count,
-                body,
                 (count) => ["span", ["Double count: ", (2*count).toString()]]
-            )
+            ).element)
         })
     })
 }

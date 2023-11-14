@@ -51,35 +51,31 @@ Temporary example:
 
 ```ts
 const createCounter = (
-    count: number | Value<number>,
+    count: number | ReactiveValue<number>,
 ): {
-    count: Value<number>,
+    count: ReactiveValue<number>,
     el: Element,
 } => {
     const reactiveCount =
         typeof count === "number"
-            ? readWrite(count)
+            ? readWriteReactiveValue(count)
             : count
 
-    const displayEl = createDOM(["span"])
-    rerenderOnValueChange(
-        reactiveCount,
-        displayEl,
-        (count) => count.toString()
-    )
-
-    const el = createDOM(
+    const el = createElement(
         ["div", [
-            displayEl,
+            reactiveElement(
+                reactiveCount,
+                (count) => ["span", ["Count: ", count.toString()]]
+            ).element,
             ["div", [
                 ["button", {
-                    onclick: () => reactiveCount.set(reactiveCount.get() - 1)
+                    onclick: () => reactiveCount.update(count => --count)
                 }, ["Decrement"]],
                 ["button", {
                     onclick: () => reactiveCount.set(0)
                 }, ["Reset"]],
                 ["button", {
-                    onclick: () => reactiveCount.set(reactiveCount.get() + 1)
+                    onclick: () => reactiveCount.update(count => ++count)
                 }, ["Increment"]],
             ]]
         ]]
@@ -92,14 +88,13 @@ const body = document.getElementsByTagName("body")[0]
 
 const {el: counterEl, count} = createCounter(3)
 if (!count.set(10)) {
-    console.log("Can't mutate because read-only!")
+    console.log("Cant mutate because read only!")
 }
 body.appendChild(counterEl)
-rerenderOnValueChange(
+body.appendChild(reactiveElement(
     count,
-    body,
     (count) => ["span", ["Double count: ", (2*count).toString()]]
-)
+).element)
 ```
 
 TBD:
