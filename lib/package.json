@@ -13,8 +13,8 @@
     }
   },
   "scripts": {
-    "test": "bash generate-test-html.bash && bash open-test-html.bash",
-    "test-gen": "bash generate-test-html.bash"
+    "test": "node dev.cjs --gen-test-html --open-test-html --compile-other-ts-versions",
+    "test-gen": "node dev.cjs --gen-test-html --compile-other-ts-versions"
   },
   "repository": {
     "type": "git",
