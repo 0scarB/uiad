@@ -5,7 +5,7 @@ import {
     readWriteReactiveValue, 
     reactiveElement,
     isErr,
-} from "./index.mjs"
+} from "./index.js"
 
 function test() {
     describe("createElement", () => {
@@ -196,7 +196,13 @@ function test() {
             } => {
                 const reactiveCount =
                     typeof count === "number"
-                        ? readWriteReactiveValue(count)
+                        ? readWriteReactiveValue<number>(
+                            count, 
+                            ["validate", "ge-10", (value) => value >= -10],
+                            ["validate", "le-10", (value) => value <= 10],
+                            ["transform", "mul", (value) => value*100],
+                            ["transform", "mul", (value) => value*10],
+                        ).logErr().ifErrThrow()
                         : count
 
                 const el = createElement(
@@ -207,28 +213,29 @@ function test() {
                         ).element,
                         ["div", [
                             ["button", {
-                                onclick: () => reactiveCount.update(count => --count)
+                                onclick: () => reactiveCount.update(count => --count).logErr()
                             }, ["Decrement"]],
                             ["button", {
-                                onclick: () => reactiveCount.set(0)
+                                onclick: () => reactiveCount.set(0).logErr()
                             }, ["Reset"]],
                             ["button", {
-                                onclick: () => reactiveCount.update(count => ++count)
+                                onclick: () => reactiveCount.update(count => ++count).logErr()
                             }, ["Increment"]],
                         ]]
                     ]]
                 )
 
-                return {el, count: reactiveCount.refAsReadOnly()}
+                return {el, count: reactiveCount.readOnlyRef()}
             }
 
             const body = document.getElementsByTagName("body")[0]
 
-            const {el: counterEl, count} = createCounter(3)
-            const setResult = count.set(10)
-            if (isErr(setResult)) {
-                console.log(`${setResult.errKind}: ${setResult.errMsg}`)
-            }
+            const {el: counterEl, count} = createCounter(0)
+            count.set(10)
+                .mapOk("test" as "test")
+                .mapErr(["test" as "test", "new msg"])
+                .logErr()
+                .logOk()
             body.appendChild(counterEl)
             body.appendChild(reactiveElement(
                 count,

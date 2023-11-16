@@ -161,6 +161,9 @@ interface changes.
 
 ### Testing
 
+Run `npm i -D` to install multiple versions of TypeScript
+that the tests will be compiled with.
+
 `npm run test` inside the `lib` directory should open a test html file
 in your browser, displaying descriptions of the tests that were
 run and whether they failed or succeeded.
@@ -171,6 +174,6 @@ output will change when you reload the page.
 Alternatively, run `npm run test-gen` to generate `test.html` inside of
 the `lib` directory and open it in your browser manually.
 
-`npm run test-gen` is reliant on the commands `node`, `tsc` and `bash`
+`npm run test-gen` is reliant on the commands `node` and `bash`
 being available from the shell/command line/terminal that you're running
 the command in.
