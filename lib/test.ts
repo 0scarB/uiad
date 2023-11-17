@@ -7,6 +7,8 @@ import {
     isErr,
 } from "./index.js"
 
+const POLL_FOR_UPDATES_INTERVAL = 0.2
+
 function test() {
     describe("createElement", () => {
         it("should create text nodes", () => {
@@ -274,6 +276,8 @@ function flushLog() {
     const testStatus = testStatusStack[testStatusStack.length - 1]
     const logEl = document.getElementById("log")
 
+    const lines: string[] = []
+
     for (const entry of logBuffer) {
         if (
             testStatus === "failure" 
@@ -298,17 +302,21 @@ function flushLog() {
                 backgroundColor = "#fff"
                 break
         }
-
         consoleMeth(entry.msg)
+
         if (logEl !== null) {
             const lineEl = document.createElement("pre")
             lineEl.appendChild(document.createTextNode(entry.msg))
             lineEl.setAttribute("style", `background:${backgroundColor};padding:0;margin:0`)
             logEl.appendChild(lineEl)
         }
+
+        lines.push(entry.msg)
     }
     // Clear buffer
     logBuffer.length = 0
+
+    return lines.join("\n")
 }
 
 function log(msg: string) {
@@ -472,6 +480,8 @@ function it(should: string, callback: () => unknown) {
 // =========
 
 log("-".repeat(70))
+log(new Date().toISOString())
+log("-".repeat(70))
 
 test()
 
@@ -501,7 +511,23 @@ if (totalAssertionCount === assertionSuccessCount) {
 
 log("-".repeat(70))
 
-flushLog()
+const logText = flushLog()
+
+fetch("/report", {method: "POST", body: logText})
+
+// Hot Reloading
+// TOOD: Use web socket instead of polling
+setInterval(() => {
+    fetch("/page-reload").then((res) => {
+        if (res.status === 200) {
+            res.text().then(newHTML => {
+                document.open()
+                document.write(newHTML)
+                document.close()
+            })
+        }
+    })
+}, POLL_FOR_UPDATES_INTERVAL * 1000)
 
 if (errors.length > 0) {
     throw errors[0]
