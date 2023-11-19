@@ -1,322 +1,394 @@
 import {
-    DOMElementSpec, 
-    ReactiveValue, 
-    createElement, 
-    readWriteReactiveValue, 
+    DOMElementSpec,
+    ReactiveValue,
+    createElement,
+    readWriteReactiveValue,
     reactiveElement,
-    isErr,
-} from "./index.js"
+} from "./index.js";
 
-const POLL_FOR_UPDATES_INTERVAL = 0.2
+const POLL_FOR_UPDATES_INTERVAL = 0.2;
 
 function test() {
     describe("createElement", () => {
         it("should create text nodes", () => {
-            const el = createElement("test") 
-            assertTrue(el instanceof Node)
-        })
+            const el = createElement("test");
+            assertTrue(el instanceof Node);
+        });
         it("should create empty elements", () => {
-            const el = createElement(["div"])
-            assertEqual(el.tagName, "DIV")
-            assertTrue(el instanceof Element)
-        })
+            const el = createElement(["div"]);
+            assertEqual(el.tagName, "DIV");
+            assertTrue(el instanceof Element);
+        });
         it("should create elements just with attributes", () => {
-            const el = createElement(["canvas", {width: 100, height: "100"}])
-            assertEqual(el.tagName, "CANVAS")
-            assertTrue(el.hasAttribute("width"))
-            assertTrue(el.hasAttribute("height"))
-            assertEqual(el.getAttribute("width"), "100")
-            assertEqual(el.getAttribute("height"), "100")
-        })
+            const el = createElement(["canvas", { width: 100, height: "100" }]);
+            assertEqual(el.tagName, "CANVAS");
+            assertTrue(el.hasAttribute("width"));
+            assertTrue(el.hasAttribute("height"));
+            assertEqual(el.getAttribute("width"), "100");
+            assertEqual(el.getAttribute("height"), "100");
+        });
         it("should create elements just with children", () => {
-            const el = createElement(
-                ["ol", [
+            const el = createElement([
+                "ol",
+                [
                     ["li", ["item1"]],
                     ["li", ["item2"]],
-                ]]
-            )
-            assertEqual(el.tagName, "OL")
-            assertEqual(el.children[0].tagName, "LI")
-            assertEqual(el.children[1].tagName, "LI")
-            assertEqual(el.children[0].innerHTML, "item1")
-            assertEqual(el.children[1].innerHTML, "item2")
-        })
+                ],
+            ]);
+            assertEqual(el.tagName, "OL");
+            assertEqual(el.children[0].tagName, "LI");
+            assertEqual(el.children[1].tagName, "LI");
+            assertEqual(el.children[0].innerHTML, "item1");
+            assertEqual(el.children[1].innerHTML, "item2");
+        });
         it("should create elements with attributes and children", () => {
-            const el = createElement(
-                ["ol", {width: 100, height: "100"}, [
+            const el = createElement([
+                "ol",
+                { width: 100, height: "100" },
+                [
                     ["li", ["item1"]],
                     ["li", ["item2"]],
-                ]]
-            )
-            assertEqual(el.tagName, "OL")
-            assertTrue(el.hasAttribute("width"))
-            assertTrue(el.hasAttribute("height"))
-            assertEqual(el.getAttribute("width"), "100")
-            assertEqual(el.getAttribute("height"), "100")
-            assertEqual(el.children[0].tagName, "LI")
-            assertEqual(el.children[1].tagName, "LI")
-            assertEqual(el.children[0].innerHTML, "item1")
-            assertEqual(el.children[1].innerHTML, "item2")
-        })
+                ],
+            ]);
+            assertEqual(el.tagName, "OL");
+            assertTrue(el.hasAttribute("width"));
+            assertTrue(el.hasAttribute("height"));
+            assertEqual(el.getAttribute("width"), "100");
+            assertEqual(el.getAttribute("height"), "100");
+            assertEqual(el.children[0].tagName, "LI");
+            assertEqual(el.children[1].tagName, "LI");
+            assertEqual(el.children[0].innerHTML, "item1");
+            assertEqual(el.children[1].innerHTML, "item2");
+        });
         it("should join the classes attribute to class", () => {
-            const el = createElement(["div", {classes: ["class1", "class2"]}])
-            assertEqual(el.getAttribute("class"), "class1 class2")
-            assertEqual(el.classList[0], "class1")
-            assertEqual(el.classList[1], "class2")
-        })
+            const el = createElement([
+                "div",
+                { classes: ["class1", "class2"] },
+            ]);
+            assertEqual(el.getAttribute("class"), "class1 class2");
+            assertEqual(el.classList[0], "class1");
+            assertEqual(el.classList[1], "class2");
+        });
         it("should serialize the style attribute when passed as an object", () => {
-            const el = createElement(
-                ["div", {
+            const el = createElement([
+                "div",
+                {
                     style: {
-                        color: "hotpink", 
-                        "font-family": "Comic Sans"
-                    }
-                }, ["beautiful text"]]
-            )
-            assertEqual(el.getAttribute("style"), "color: hotpink; font-family: Comic Sans")
-        })
+                        color: "hotpink",
+                        "font-family": "Comic Sans",
+                    },
+                },
+                ["beautiful text"],
+            ]);
+            assertEqual(
+                el.getAttribute("style"),
+                "color: hotpink; font-family: Comic Sans",
+            );
+        });
         it("should add event listeners for attributes starting with 'on'", () => {
-            let count = 0 
-            const el = createElement(
-                ['button', {
-                    onclick: () => count++
-                }, ["increment"]]
-            ) as HTMLButtonElement
-            
-            const body = document.getElementsByTagName("body")[0]
-            body.appendChild(el)
+            let count = 0;
+            const el = createElement([
+                "button",
+                {
+                    onclick: () => count++,
+                },
+                ["increment"],
+            ]) as HTMLButtonElement;
+
+            const body = document.getElementsByTagName("body")[0];
+            body.appendChild(el);
             for (let i = 0; i < 3; i++) {
-                el.click()
+                el.click();
             }
-            
-            assertEqual(count, 3)
-            
-            body.removeChild(el)
-        })
+
+            assertEqual(count, 3);
+
+            body.removeChild(el);
+        });
         it("should work for inc/dec/reset example", () => {
             const counter = (): DOMElementSpec => {
-                let count = 0
-                let displayText = createElement(`${count}`)
-                const display = createElement(
-                    ["span", {id: "display"}, [displayText]]
-                )
+                let count = 0;
+                let displayText = createElement(`${count}`);
+                const display = createElement([
+                    "span",
+                    { id: "display" },
+                    [displayText],
+                ]);
                 const updateDisplay = () => {
-                    const newDisplayText = createElement(`${count}`)
-                    display.replaceChild(newDisplayText, displayText)
-                    displayText = newDisplayText
-                }
-                
-                return ["div", [
-                    display,
-                    ["div", {style: {"display": "flex"}}, [
-                        ["button", {id: "dec-btn",
-                            onclick: () => {
-                                count--
-                                updateDisplay()
-                            }
-                        }, ["Decrement"]],
-                        ["button", {id: "reset-btn",
-                            onclick: () => {
-                                count = 0
-                                updateDisplay()
-                            }
-                        }, ["Reset"]],
-                        ["button", {id: "inc-btn",
-                            onclick: () => {
-                                count++
-                                updateDisplay()
-                            }
-                        }, ["Increment"]]
-                    ]]
-                ]]
-            }
+                    const newDisplayText = createElement(`${count}`);
+                    display.replaceChild(newDisplayText, displayText);
+                    displayText = newDisplayText;
+                };
 
-            const body = document.getElementsByTagName("body")[0]
-            const counterEl = createElement(counter)
-            body.appendChild(counterEl)
-            const displayEl = document.getElementById("display")
-            const incBtnEl = document.getElementById("inc-btn")
-            const resetBtnEl = document.getElementById("reset-btn")
-            const decBtnEl = document.getElementById("dec-btn")
+                return [
+                    "div",
+                    [
+                        display,
+                        [
+                            "div",
+                            { style: { display: "flex" } },
+                            [
+                                [
+                                    "button",
+                                    {
+                                        id: "dec-btn",
+                                        onclick: () => {
+                                            count--;
+                                            updateDisplay();
+                                        },
+                                    },
+                                    ["Decrement"],
+                                ],
+                                [
+                                    "button",
+                                    {
+                                        id: "reset-btn",
+                                        onclick: () => {
+                                            count = 0;
+                                            updateDisplay();
+                                        },
+                                    },
+                                    ["Reset"],
+                                ],
+                                [
+                                    "button",
+                                    {
+                                        id: "inc-btn",
+                                        onclick: () => {
+                                            count++;
+                                            updateDisplay();
+                                        },
+                                    },
+                                    ["Increment"],
+                                ],
+                            ],
+                        ],
+                    ],
+                ];
+            };
 
-            assertEqual(displayEl?.innerHTML, "0")
-            incBtnEl?.click()
-            assertEqual(displayEl?.innerHTML, "1")
-            incBtnEl?.click()
-            incBtnEl?.click()
-            assertEqual(displayEl?.innerHTML, "3")
-            decBtnEl?.click()
-            decBtnEl?.click()
-            decBtnEl?.click()
-            decBtnEl?.click()
-            decBtnEl?.click()
-            assertEqual(displayEl?.innerHTML, "-2")
-            resetBtnEl?.click()
-            assertEqual(displayEl?.innerHTML, "0")
-            decBtnEl?.click()
-            incBtnEl?.click()
-            incBtnEl?.click()
-            assertEqual(displayEl?.innerHTML, "1")
+            const body = document.getElementsByTagName("body")[0];
+            const counterEl = createElement(counter);
+            body.appendChild(counterEl);
+            const displayEl = document.getElementById("display");
+            const incBtnEl = document.getElementById("inc-btn");
+            const resetBtnEl = document.getElementById("reset-btn");
+            const decBtnEl = document.getElementById("dec-btn");
 
-            body.removeChild(counterEl)
-        })
+            assertEqual(displayEl?.innerHTML, "0");
+            incBtnEl?.click();
+            assertEqual(displayEl?.innerHTML, "1");
+            incBtnEl?.click();
+            incBtnEl?.click();
+            assertEqual(displayEl?.innerHTML, "3");
+            decBtnEl?.click();
+            decBtnEl?.click();
+            decBtnEl?.click();
+            decBtnEl?.click();
+            decBtnEl?.click();
+            assertEqual(displayEl?.innerHTML, "-2");
+            resetBtnEl?.click();
+            assertEqual(displayEl?.innerHTML, "0");
+            decBtnEl?.click();
+            incBtnEl?.click();
+            incBtnEl?.click();
+            assertEqual(displayEl?.innerHTML, "1");
+
+            body.removeChild(counterEl);
+        });
         it("should work with the examples from the README", () => {
-            const textNode = createElement("text")
-            const emptyElement = createElement(["div"])
-            const elementWithChildren = createElement(
-                ["ol", [
+            const textNode = createElement("text");
+            const emptyElement = createElement(["div"]);
+            const elementWithChildren = createElement([
+                "ol",
+                [
                     ["li", ["item 1."]],
                     ["li", ["item 2."]],
-                ]]
-            )
-            const elementWithAttributes = createElement(
-                ["canvas", {width: 100, height: "100px"}]
-            )
-            const styleAttributeCanBeAnObject = createElement(
-                ["span", {style: {
-                    color: "hotpink", 
-                    "font-family": "Comic Sans",
-                }}, ["beautiful text"]]
-            )
-            const elementWithEventListener = createElement(
-                ["button", {
-                    onclick: () => alert("I'm sorry, Dave.")
-                }, ["Decline Cookies"]]
-            )
+                ],
+            ]);
+            const elementWithAttributes = createElement([
+                "canvas",
+                { width: 100, height: "100px" },
+            ]);
+            const styleAttributeCanBeAnObject = createElement([
+                "span",
+                {
+                    style: {
+                        color: "hotpink",
+                        "font-family": "Comic Sans",
+                    },
+                },
+                ["beautiful text"],
+            ]);
+            const elementWithEventListener = createElement([
+                "button",
+                {
+                    onclick: () => alert("I'm sorry, Dave."),
+                },
+                ["Decline Cookies"],
+            ]);
             const nativeElementPassthrough = createElement(
-                document.createTextNode("test")
-            )
-        })
-    })
+                document.createTextNode("test"),
+            );
+        });
+    });
     describe("rerenderOnValueChange", () => {
         it("should work for counter example", () => {
             const createCounter = (
                 count: number | ReactiveValue<number>,
             ): {
-                count: ReactiveValue<number>,
-                el: Element,
+                count: ReactiveValue<number>;
+                el: Element;
             } => {
                 const reactiveCount =
                     typeof count === "number"
                         ? readWriteReactiveValue<number>(
-                            count, 
-                            ["validate", "ge-10", (value) => value >= -10],
-                            ["validate", "le-10", (value) => value <= 10],
-                            ["transform", "mul", (value) => value*100],
-                            ["transform", "mul", (value) => value*10],
-                        ).logErr().ifErrThrow()
-                        : count
+                              count,
+                              ["validate", "ge-10", (value) => value >= -10],
+                              ["validate", "le-10", (value) => value <= 10],
+                              ["transform", "mul", (value) => value * 100],
+                              ["transform", "mul", (value) => value * 10],
+                          )
+                              .logErr()
+                              .ifErrThrow()
+                        : count;
 
-                const el = createElement(
-                    ["div", [
-                        reactiveElement(
-                            reactiveCount,
-                            (count) => ["span", ["Count: ", count.toString()]]
-                        ).element,
-                        ["div", [
-                            ["button", {
-                                onclick: () => reactiveCount.update(count => --count).logErr()
-                            }, ["Decrement"]],
-                            ["button", {
-                                onclick: () => reactiveCount.set(0).logErr()
-                            }, ["Reset"]],
-                            ["button", {
-                                onclick: () => reactiveCount.update(count => ++count).logErr()
-                            }, ["Increment"]],
-                        ]]
-                    ]]
-                )
+                const el = createElement([
+                    "div",
+                    [
+                        reactiveElement(reactiveCount, (count) => [
+                            "span",
+                            ["Count: ", count.toString()],
+                        ]).element,
+                        [
+                            "div",
+                            [
+                                [
+                                    "button",
+                                    {
+                                        onclick: () =>
+                                            reactiveCount
+                                                .update((count) => --count)
+                                                .logErr(),
+                                    },
+                                    ["Decrement"],
+                                ],
+                                [
+                                    "button",
+                                    {
+                                        onclick: () =>
+                                            reactiveCount.set(0).logErr(),
+                                    },
+                                    ["Reset"],
+                                ],
+                                [
+                                    "button",
+                                    {
+                                        onclick: () =>
+                                            reactiveCount
+                                                .update((count) => ++count)
+                                                .logErr(),
+                                    },
+                                    ["Increment"],
+                                ],
+                            ],
+                        ],
+                    ],
+                ]);
 
-                return {el, count: reactiveCount.readOnlyRef()}
-            }
+                return { el, count: reactiveCount.readOnlyRef() };
+            };
 
-            const body = document.getElementsByTagName("body")[0]
+            const body = document.getElementsByTagName("body")[0];
 
-            const {el: counterEl, count} = createCounter(0)
-            count.set(10)
+            const { el: counterEl, count } = createCounter(0);
+            count
+                .set(10)
                 .mapOk("test" as "test")
                 .mapErr(["test" as "test", "new msg"])
                 .logErr()
-                .logOk()
-            body.appendChild(counterEl)
-            body.appendChild(reactiveElement(
-                count,
-                (count) => ["span", ["Double count: ", (2*count).toString()]]
-            ).element)
-        })
-    })
+                .logOk();
+            body.appendChild(counterEl);
+            body.appendChild(
+                reactiveElement(count, (count) => [
+                    "span",
+                    ["Double count: ", (2 * count).toString()],
+                ]).element,
+            );
+        });
+    });
 }
 
 // Test Machinery
 // ==============
 
-let assertionSuccessCount = 0
-let assertionFailureCount = 0
-let testSuccessCount = 0
-let testFailureCount = 0
-let testStatusStack: ("success" | "failure")[] = ["success"]
-const errors: Error[] = []
-let logIndent = 0
+let assertionSuccessCount = 0;
+let assertionFailureCount = 0;
+let testSuccessCount = 0;
+let testFailureCount = 0;
+let testStatusStack: ("success" | "failure")[] = ["success"];
+const errors: Error[] = [];
+let logIndent = 0;
 
 const failCurrentTest = () => {
-    const stackSize = testStatusStack.length
-    testStatusStack.length = 0
+    const stackSize = testStatusStack.length;
+    testStatusStack.length = 0;
     for (let i = 0; i < stackSize; i++) {
-        testStatusStack.push("failure")
+        testStatusStack.push("failure");
     }
-}
+};
 
 const logBuffer: {
-    condition: "always" | "onTestFailure",
-    type: "info" | "success" | "failure",
-    msg: string,
-}[] = []
+    condition: "always" | "onTestFailure";
+    type: "info" | "success" | "failure";
+    msg: string;
+}[] = [];
 
 function flushLog() {
-    const testStatus = testStatusStack[testStatusStack.length - 1]
-    const logEl = document.getElementById("log")
+    const testStatus = testStatusStack[testStatusStack.length - 1];
+    const logEl = document.getElementById("log");
 
-    const lines: string[] = []
+    const lines: string[] = [];
 
     for (const entry of logBuffer) {
-        if (
-            testStatus === "failure" 
-            && entry.condition === "onTestFailure"
-        ) {
-            continue
+        if (testStatus === "failure" && entry.condition === "onTestFailure") {
+            continue;
         }
 
-        let consoleMeth: (msg: string) => unknown
-        let backgroundColor: string
+        let consoleMeth: (msg: string) => unknown;
+        let backgroundColor: string;
         switch (entry.type) {
             case "success":
-                consoleMeth = console.log
-                backgroundColor = "#aee"
-                break
+                consoleMeth = console.log;
+                backgroundColor = "#aee";
+                break;
             case "failure":
-                consoleMeth = console.error
-                backgroundColor = "#eaa"
-                break
+                consoleMeth = console.error;
+                backgroundColor = "#eaa";
+                break;
             default:
-                consoleMeth = console.log
-                backgroundColor = "#fff"
-                break
+                consoleMeth = console.log;
+                backgroundColor = "#fff";
+                break;
         }
-        consoleMeth(entry.msg)
+        consoleMeth(entry.msg);
 
         if (logEl !== null) {
-            const lineEl = document.createElement("pre")
-            lineEl.appendChild(document.createTextNode(entry.msg))
-            lineEl.setAttribute("style", `background:${backgroundColor};padding:0;margin:0`)
-            logEl.appendChild(lineEl)
+            const lineEl = document.createElement("pre");
+            lineEl.appendChild(document.createTextNode(entry.msg));
+            lineEl.setAttribute(
+                "style",
+                `background:${backgroundColor};padding:0;margin:0`,
+            );
+            logEl.appendChild(lineEl);
         }
 
-        lines.push(entry.msg)
+        lines.push(entry.msg);
     }
     // Clear buffer
-    logBuffer.length = 0
+    logBuffer.length = 0;
 
-    return lines.join("\n")
+    return lines.join("\n");
 }
 
 function log(msg: string) {
@@ -325,9 +397,9 @@ function log(msg: string) {
         type: "info",
         msg: msg
             .split("\n")
-            .map(line => `${" ".repeat(logIndent)}${line}`)
+            .map((line) => `${" ".repeat(logIndent)}${line}`)
             .join("\n"),
-    })
+    });
 }
 
 function logOnFailure(msg: string) {
@@ -336,9 +408,9 @@ function logOnFailure(msg: string) {
         type: "info",
         msg: msg
             .split("\n")
-            .map(line => `${" ".repeat(logIndent)}${line}`)
+            .map((line) => `${" ".repeat(logIndent)}${line}`)
             .join("\n"),
-    })
+    });
 }
 
 function logSuccess(msg: string) {
@@ -347,9 +419,9 @@ function logSuccess(msg: string) {
         type: "success",
         msg: msg
             .split("\n")
-            .map(line => `${" ".repeat(logIndent)}${line}`)
+            .map((line) => `${" ".repeat(logIndent)}${line}`)
             .join("\n"),
-    })
+    });
 }
 
 function logFailure(msg: string) {
@@ -358,177 +430,177 @@ function logFailure(msg: string) {
         type: "failure",
         msg: msg
             .split("\n")
-            .map(line => `${" ".repeat(logIndent)}${line}`)
+            .map((line) => `${" ".repeat(logIndent)}${line}`)
             .join("\n"),
-    })
+    });
 }
 
 function assertEqual<T>(
-    a: any, 
+    a: any,
     b: any,
     msg: string = "Values should be equal",
 ) {
-    const stringReprA = JSON.stringify(a)
-    const stringReprB = JSON.stringify(b)
-    const areEqual = a === b && stringReprA === stringReprB
+    const stringReprA = JSON.stringify(a);
+    const stringReprB = JSON.stringify(b);
+    const areEqual = a === b && stringReprA === stringReprB;
     if (areEqual) {
-        assertionSuccessCount++
+        assertionSuccessCount++;
     } else {
-        logFailure(`Failed: ${msg}`)
-        logFailure(`    ${stringReprA}`)
-        logFailure(`    !==`)
-        logFailure(`    ${stringReprB}`)
-        assertionFailureCount++
-        failCurrentTest()
+        logFailure(`Failed: ${msg}`);
+        logFailure(`    ${stringReprA}`);
+        logFailure(`    !==`);
+        logFailure(`    ${stringReprB}`);
+        assertionFailureCount++;
+        failCurrentTest();
     }
 }
 
-function assertTrue(
-    x: any,
-    msg: string = "Value should be true",
-) {
+function assertTrue(x: any, msg: string = "Value should be true") {
     if (x === true) {
-        assertionSuccessCount++
+        assertionSuccessCount++;
     } else {
-        logFailure(`Failed: ${msg}`)
-        logFailure(`    ${JSON.stringify(x)}`)
-        logFailure(`    !==`)
-        logFailure(`    true`)
-        assertionFailureCount++
-        failCurrentTest()
+        logFailure(`Failed: ${msg}`);
+        logFailure(`    ${JSON.stringify(x)}`);
+        logFailure(`    !==`);
+        logFailure(`    true`);
+        assertionFailureCount++;
+        failCurrentTest();
     }
 }
 
-function assertFalse(
-    x: any,
-    msg: string = "Value should be false",
-) {
+function assertFalse(x: any, msg: string = "Value should be false") {
     if (x === false) {
-        assertionSuccessCount++
+        assertionSuccessCount++;
     } else {
-        logFailure(`Failed: ${msg}`)
-        logFailure(`    ${JSON.stringify(x)}`)
-        logFailure(`    !==`)
-        logFailure(`    false`)
-        assertionFailureCount++
-        failCurrentTest()
+        logFailure(`Failed: ${msg}`);
+        logFailure(`    ${JSON.stringify(x)}`);
+        logFailure(`    !==`);
+        logFailure(`    false`);
+        assertionFailureCount++;
+        failCurrentTest();
     }
 }
 
-function assertNull(
-    x: any,
-    msg: string = "Value should be null",
-) {
+function assertNull(x: any, msg: string = "Value should be null") {
     if (x === false) {
-        assertionSuccessCount++
+        assertionSuccessCount++;
     } else {
-        logFailure(`Failed: ${msg}`)
-        logFailure(`    ${JSON.stringify(x)}`)
-        logFailure(`    !==`)
-        logFailure(`    null`)
-        assertionFailureCount++
-        failCurrentTest()
+        logFailure(`Failed: ${msg}`);
+        logFailure(`    ${JSON.stringify(x)}`);
+        logFailure(`    !==`);
+        logFailure(`    null`);
+        assertionFailureCount++;
+        failCurrentTest();
     }
 }
 
 function describe(
-    description: string, 
+    description: string,
     callback: () => unknown,
     onSuccess: () => void = () => {},
     onFailure: () => void = () => {},
 ) {
-    testStatusStack.push("success")
-    logIndent += 4
-    const currentLogIndex = logBuffer.length
+    testStatusStack.push("success");
+    logIndent += 4;
+    const currentLogIndex = logBuffer.length;
 
     try {
-        callback()
-    } catch(err) {
-        logFailure("Unexpected Error:")
-        logIndent += 4
-        logFailure(err.toString())
-        logIndent -= 4
-        failCurrentTest()
-        errors.push(err)
+        callback();
+    } catch (err) {
+        logFailure("Unexpected Error:");
+        logIndent += 4;
+        logFailure(err.toString());
+        logIndent -= 4;
+        failCurrentTest();
+        errors.push(err);
     }
 
-    const status = testStatusStack.pop()
+    const status = testStatusStack.pop();
     if (status === "success") {
-        onSuccess()
+        onSuccess();
     } else {
-        onFailure()
+        onFailure();
     }
     logBuffer.splice(currentLogIndex, 0, {
         condition: "always",
         type: status || "failure",
-        msg: `${" ".repeat(logIndent - 4)}${status === "success" ? "✔" : "✘"} ${description}`
-    })
-    logIndent -= 4
+        msg: `${" ".repeat(logIndent - 4)}${
+            status === "success" ? "✔" : "✘"
+        } ${description}`,
+    });
+    logIndent -= 4;
 }
 
 function it(should: string, callback: () => unknown) {
     describe(
-        `it ${should}`, 
+        `it ${should}`,
         callback,
         () => testSuccessCount++,
         () => testFailureCount++,
-    )
+    );
 }
-
 
 // Execution
 // =========
 
-log("-".repeat(70))
-log(new Date().toISOString())
-log("-".repeat(70))
+log("-".repeat(70));
+log(new Date().toISOString());
+log("-".repeat(70));
 
-test()
+test();
 
-log("-".repeat(70))
+log("-".repeat(70));
 
-const status = testStatusStack.pop()
-const totalAssertionCount = assertionSuccessCount + assertionFailureCount
-const totalTestCount = testSuccessCount + testFailureCount
+const status = testStatusStack.pop();
+const totalAssertionCount = assertionSuccessCount + assertionFailureCount;
+const totalTestCount = testSuccessCount + testFailureCount;
 
 if (status === "success") {
-    logSuccess('Tests succeeded:')
+    logSuccess("Tests succeeded:");
 } else {
-    logFailure('Tests failed:')
+    logFailure("Tests failed:");
 }
 if (totalTestCount === testSuccessCount) {
-    logSuccess(`    All ${testSuccessCount}/${totalTestCount} tests succeeded :)`)
+    logSuccess(
+        `    All ${testSuccessCount}/${totalTestCount} tests succeeded :)`,
+    );
 } else {
-    logFailure(`    ${testFailureCount}/${totalTestCount} tests failed :(`)
-    logSuccess(`    ${testSuccessCount}/${totalTestCount} tests succeeded`)
+    logFailure(`    ${testFailureCount}/${totalTestCount} tests failed :(`);
+    logSuccess(`    ${testSuccessCount}/${totalTestCount} tests succeeded`);
 }
 if (totalAssertionCount === assertionSuccessCount) {
-    logSuccess(`    All ${assertionSuccessCount}/${totalAssertionCount} assertions succeeded :)`)
+    logSuccess(
+        `    All ${assertionSuccessCount}/${totalAssertionCount} assertions succeeded :)`,
+    );
 } else {
-    logFailure(`    ${assertionFailureCount}/${totalAssertionCount} assertions failed :(`)
-    logSuccess(`    ${assertionSuccessCount}/${totalAssertionCount} assertions succeeded`)
+    logFailure(
+        `    ${assertionFailureCount}/${totalAssertionCount} assertions failed :(`,
+    );
+    logSuccess(
+        `    ${assertionSuccessCount}/${totalAssertionCount} assertions succeeded`,
+    );
 }
 
-log("-".repeat(70))
+log("-".repeat(70));
 
-const logText = flushLog()
+const logText = flushLog();
 
-fetch("/report", {method: "POST", body: logText})
+fetch("/report", { method: "POST", body: logText });
 
 // Hot Reloading
 // TOOD: Use web socket instead of polling
 setInterval(() => {
     fetch("/page-reload").then((res) => {
         if (res.status === 200) {
-            res.text().then(newHTML => {
-                document.open()
-                document.write(newHTML)
-                document.close()
-            })
+            res.text().then((newHTML) => {
+                document.open();
+                document.write(newHTML);
+                document.close();
+            });
         }
-    })
-}, POLL_FOR_UPDATES_INTERVAL * 1000)
+    });
+}, POLL_FOR_UPDATES_INTERVAL * 1000);
 
 if (errors.length > 0) {
-    throw errors[0]
+    throw errors[0];
 }

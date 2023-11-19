@@ -1,40 +1,46 @@
 {
-  "name": "uiad",
-  "version": "0.1.0",
-  "description": "User Interfaces As Data",
-  "type": "module",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "typesVersions": {
-    "<4.7": {
-      "index.d.ts": [
-        "unsupported.d.ts"
-      ]
+    "name": "uiad",
+    "version": "0.1.0",
+    "description": "User Interfaces As Data",
+    "type": "module",
+    "main": "index.js",
+    "types": "index.d.ts",
+    "typesVersions": {
+        "<4.7": {
+            "index.d.ts": [
+                "unsupported.d.ts"
+            ]
+        }
+    },
+    "scripts": {
+        "watch": "node dev.cjs --watch --open-test-html --gen-test-html --compile-other-ts-versions --format",
+        "watch-test": "node dev.cjs --watch --open-test-html --gen-test-html",
+        "watch-format": "node dev.cjs --watch --format",
+        "test-open": "node dev.cjs --gen-test-html --open-test-html --compile-other-ts-versions",
+        "test-gen": "node dev.cjs --gen-test-html --compile-other-ts-versions",
+        "format": "node dev.cjs --format"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/0scarB/uiad.git"
+    },
+    "keywords": [
+        "web",
+        "ui",
+        "reactivity",
+        "minimal"
+    ],
+    "author": "Oscar Butler-Aldridge",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/0scarB/uiad/issues"
+    },
+    "homepage": "https://github.com/0scarB/uiad#readme",
+    "devDependencies": {
+        "@swc/cli": "^0.1.63",
+        "@swc/core": "^1.3.96",
+        "prettier": "3.1.x",
+        "typescript-4.7": "npm:typescript@4.7.x",
+        "typescript-5.2": "npm:typescript@5.2.x"
     }
-  },
-  "scripts": {
-    "test-watch": "node dev.cjs --test-server",
-    "test-open": "node dev.cjs --gen-test-html --open-test-html --compile-other-ts-versions",
-    "test-gen": "node dev.cjs --gen-test-html --compile-other-ts-versions"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/0scarB/uiad.git"
-  },
-  "keywords": [
-    "web",
-    "ui",
-    "reactivity",
-    "minimal"
-  ],
-  "author": "Oscar Butler-Aldridge",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/0scarB/uiad/issues"
-  },
-  "homepage": "https://github.com/0scarB/uiad#readme",
-  "devDependencies": {
-    "typescript-4.7": "npm:typescript@4.7.x",
-    "typescript-5.2": "npm:typescript@5.2.x"
-  }
 }
