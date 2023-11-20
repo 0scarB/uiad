@@ -6,8 +6,6 @@ import {
     reactiveElement,
 } from "./index.js";
 
-const POLL_FOR_UPDATES_INTERVAL = 0.2;
-
 function test() {
     describe("createElement", () => {
         it("should create text nodes", () => {
@@ -583,23 +581,9 @@ if (totalAssertionCount === assertionSuccessCount) {
 
 log("-".repeat(70));
 
-const logText = flushLog();
-
-fetch("/report", { method: "POST", body: logText });
-
-// Hot Reloading
-// TOOD: Use web socket instead of polling
-setInterval(() => {
-    fetch("/page-reload").then((res) => {
-        if (res.status === 200) {
-            res.text().then((newHTML) => {
-                document.open();
-                document.write(newHTML);
-                document.close();
-            });
-        }
-    });
-}, POLL_FOR_UPDATES_INTERVAL * 1000);
+// Used by a <script> from the HTML that the watch server generates
+// so it can be sent to the server and displayed in the command line.
+export const logText = flushLog();
 
 if (errors.length > 0) {
     throw errors[0];
