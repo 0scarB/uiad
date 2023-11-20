@@ -345,6 +345,7 @@ const logBuffer: {
 function flushLog() {
     const testStatus = testStatusStack[testStatusStack.length - 1];
     const logEl = document.getElementById("log");
+    logEl?.setAttribute("class", "log");
 
     const lines: string[] = [];
 
@@ -354,19 +355,19 @@ function flushLog() {
         }
 
         let consoleMeth: (msg: string) => unknown;
-        let backgroundColor: string;
+        let cssClass: string;
         switch (entry.type) {
             case "success":
                 consoleMeth = console.log;
-                backgroundColor = "#aee";
+                cssClass = "log-line log-line--success";
                 break;
             case "failure":
                 consoleMeth = console.error;
-                backgroundColor = "#eaa";
+                cssClass = "log-line log-line--failure";
                 break;
             default:
                 consoleMeth = console.log;
-                backgroundColor = "#fff";
+                cssClass = "log-line";
                 break;
         }
         consoleMeth(entry.msg);
@@ -374,10 +375,7 @@ function flushLog() {
         if (logEl !== null) {
             const lineEl = document.createElement("pre");
             lineEl.appendChild(document.createTextNode(entry.msg));
-            lineEl.setAttribute(
-                "style",
-                `background:${backgroundColor};padding:0;margin:0`,
-            );
+            lineEl.setAttribute("class", cssClass);
             logEl.appendChild(lineEl);
         }
 
