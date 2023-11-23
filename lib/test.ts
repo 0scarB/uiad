@@ -4,9 +4,152 @@ import {
     createElement,
     readWriteReactiveValue,
     reactiveElement,
+    ok,
+    err,
 } from "./index.js";
 
 function test() {
+    describe("Result -> Ok/Err", () => {
+        describe("onOk", () => {
+            it("should be called when result is ok", () => {
+                let wasCalled = false;
+                ok("x").onOk(() => (wasCalled = true));
+                assertTrue(wasCalled);
+            });
+            it("should not be called when result is err", () => {
+                let wasCalled = false;
+                err("MyErr", "msg").onOk(() => (wasCalled = true));
+                assertFalse(wasCalled);
+            });
+            it("should be passed the ok value", () => {
+                let okValue = "unknown";
+                ok("ok").onOk((value) => (okValue = value));
+                assertEqual(okValue, "ok");
+            });
+        });
+        describe("onErr", () => {
+            it("should be called when result is err", () => {
+                let wasCalled = false;
+                err("MyErr", "msg").onErr(() => (wasCalled = true));
+                assertTrue(wasCalled);
+            });
+            it("should not be called when result is ok", () => {
+                let wasCalled = false;
+                ok("x").onErr(() => (wasCalled = true));
+                assertFalse(wasCalled);
+            });
+            it("should be passed the error kind and message", () => {
+                let errKind = "";
+                let errMsg = "";
+                err("MyErr", "Reactor meltdown!").onErr((kind, msg) => {
+                    errKind = kind;
+                    errMsg = msg;
+                });
+                assertEqual(errKind, "MyErr");
+                assertEqual(errMsg, "Reactor meltdown!");
+            });
+        });
+        describe("logOk", () => {
+            it("should log when result is ok", () => {
+                assertConsoleLog(() => {
+                    ok("ok").logOk();
+                });
+            });
+            it("should not log when result is err", () => {
+                assertNoConsoleLog(() => {
+                    err("MyErr", "msg").logOk();
+                });
+            });
+            it("should log ok value when 0 args are provided", () => {
+                assertConsoleLog(() => {
+                    ok("ok").logOk();
+                }, "ok");
+            });
+            it("should log the 1st arg if 1 arg is provided", () => {
+                assertConsoleLog(() => {
+                    ok("ok").logOk("foo");
+                }, "foo");
+            });
+            it(
+                [
+                    "should use the 1st arg to specify the console method",
+                    "if 2 args are provided",
+                ],
+                () => {
+                    assertConsoleError(() => {
+                        ok("ok").logOk("error", "I expected this to be err");
+                    }, "I expected this to be err");
+                },
+            );
+            it(
+                [
+                    "it should call the 2nd arg to create the message",
+                    " when the second arg is a function",
+                ],
+                () => {
+                    assertConsoleError(() => {
+                        ok(2).logOk("error", (x) => `${2 * x}`);
+                    }, "4");
+                },
+            );
+        });
+        describe("logErr", () => {
+            it("should log error when result is err", () => {
+                assertConsoleError(() => {
+                    err("MyErr", "msg").logErr();
+                });
+            });
+            it("should not log error when result is ok", () => {
+                assertNoConsoleError(() => {
+                    ok("x").logErr();
+                });
+            });
+            it(
+                [
+                    "should log error '<error king>: <error message>' ",
+                    "when 0 args are provided",
+                ],
+                () => {
+                    assertConsoleError(() => {
+                        err("MyErr", "msg").logErr();
+                    }, "MyErr: msg");
+                },
+            );
+            it("should log the 1st arg as an error if 1 arg is provided", () => {
+                assertConsoleError(() => {
+                    err("MyErr", "msg").logErr("foo");
+                }, "foo");
+            });
+            it(
+                [
+                    "should use the 1st arg to specify the console method",
+                    "if 2 args are provided",
+                ],
+                () => {
+                    assertConsoleLog(() => {
+                        err("MyErr", "msg").logErr(
+                            "log",
+                            "this error was expected",
+                        );
+                    }, "this error was expected");
+                },
+            );
+            it(
+                [
+                    "it should call the 2nd arg to create the message",
+                    " when the second arg is a function",
+                ],
+                () => {
+                    assertConsoleLog(() => {
+                        err("MyErr", "msg").logErr(
+                            "log",
+                            (kind, msg) => `${kind.toUpperCase()}: ${msg}!`,
+                        );
+                    }, "MYERR: msg!");
+                },
+            );
+        });
+    });
     describe("createElement", () => {
         it("should create text nodes", () => {
             const el = createElement("test");
@@ -490,8 +633,116 @@ function assertNull(x: any, msg: string = "Value should be null") {
     }
 }
 
+function assertConsoleLog(callback: () => unknown, expectedMsg?: string) {
+    assertConsoleOutput(callback, "log", expectedMsg);
+}
+
+function assertConsoleError(callback: () => unknown, expectedMsg?: string) {
+    assertConsoleOutput(callback, "error", expectedMsg);
+}
+
+function assertConsoleOutput(
+    callback: () => unknown,
+    expectedConsoleMethod: "log" | "error" | "debug",
+    expectedMsg?: string,
+) {
+    let consoleMsg: string | null = null;
+    const tempConsoleMethod = (msg: string) => (consoleMsg = msg);
+    const realConsoleMethod = console[expectedConsoleMethod];
+    console[expectedConsoleMethod] = tempConsoleMethod;
+
+    try {
+        callback();
+
+        let succeeded = false;
+        if (typeof expectedMsg === "undefined") {
+            succeeded = consoleMsg !== null;
+        } else {
+            succeeded = consoleMsg === expectedMsg;
+        }
+
+        if (succeeded) {
+            assertionSuccessCount++;
+        } else {
+            if (consoleMsg === null) {
+                logFailure(
+                    `Failure: No ${expectedConsoleMethod} message was logged by console`,
+                );
+            } else {
+                logFailure(
+                    `Failure: Output of \`console.${expectedConsoleMethod}\` did not match expected`,
+                );
+                logFailure(`    "${consoleMsg}"`);
+                logFailure(`    !==`);
+                logFailure(`    ${expectedMsg}`);
+            }
+            assertionFailureCount++;
+            failCurrentTest();
+        }
+    } catch (err) {
+        console[expectedConsoleMethod] = realConsoleMethod;
+        throw err;
+    }
+
+    console[expectedConsoleMethod] = realConsoleMethod;
+}
+
+function assertNoConsoleLog(callback: () => unknown, unexpectedMsg?: string) {
+    assertNoConsoleOutput(callback, "log", unexpectedMsg);
+}
+
+function assertNoConsoleError(callback: () => unknown, unexpectedMsg?: string) {
+    assertNoConsoleOutput(callback, "error", unexpectedMsg);
+}
+
+function assertNoConsoleOutput(
+    callback: () => unknown,
+    unexpectedConsoleMethod: "log" | "error" | "debug",
+    unexpectedMsg?: string,
+) {
+    let consoleMsg: string | null = null;
+    const tempConsoleMethod = (msg: string) => (consoleMsg = msg);
+    const realConsoleMethod = console[unexpectedConsoleMethod];
+    console[unexpectedConsoleMethod] = tempConsoleMethod;
+
+    try {
+        callback();
+
+        let succeeded = false;
+        if (typeof unexpectedMsg === "undefined") {
+            succeeded = consoleMsg === null;
+        } else {
+            succeeded = consoleMsg !== unexpectedMsg;
+        }
+
+        if (succeeded) {
+            assertionSuccessCount++;
+        } else {
+            if (consoleMsg === null) {
+                logFailure(
+                    `Failure: An unexpected ${unexpectedConsoleMethod} message was logged by console`,
+                );
+            } else {
+                logFailure(
+                    `Failure: Output of \`console.${unexpectedConsoleMethod}\` should not match`,
+                );
+                logFailure(`    "${consoleMsg}"`);
+                logFailure(`    ===`);
+                logFailure(`    ${unexpectedMsg}`);
+            }
+            assertionFailureCount++;
+            failCurrentTest();
+        }
+    } catch (err) {
+        console[unexpectedConsoleMethod] = realConsoleMethod;
+        throw err;
+    }
+
+    console[unexpectedConsoleMethod] = realConsoleMethod;
+}
+
 function describe(
-    description: string,
+    description: string | string[],
     callback: () => unknown,
     onSuccess: () => void = () => {},
     onFailure: () => void = () => {},
@@ -517,19 +768,42 @@ function describe(
     } else {
         onFailure();
     }
+
+    let descriptionLines: string[];
+    if (typeof description === "string") {
+        descriptionLines = description.split("\n");
+    } else {
+        descriptionLines = [];
+        for (const item of description) {
+            descriptionLines.push(...item.split("\n"));
+        }
+    }
+    const msg = [
+        `${" ".repeat(logIndent - 4)}${status === "success" ? "✔" : "✘"} ${
+            descriptionLines[0]
+        }`,
+        ...descriptionLines
+            .slice(1)
+            .map((line) => `${" ".repeat(logIndent - 4)}  ${line}`),
+    ].join("\n");
     logBuffer.splice(currentLogIndex, 0, {
         condition: "always",
         type: status || "failure",
-        msg: `${" ".repeat(logIndent - 4)}${
-            status === "success" ? "✔" : "✘"
-        } ${description}`,
+        msg,
     });
     logIndent -= 4;
 }
 
-function it(should: string, callback: () => unknown) {
+function it(should: string | string[], callback: () => unknown) {
+    let description: string | string[];
+    if (typeof should === "string") {
+        description = `it ${should}`;
+    } else {
+        description = [`it ${should[0]}`, ...should.slice(1)];
+    }
+
     describe(
-        `it ${should}`,
+        description,
         callback,
         () => testSuccessCount++,
         () => testFailureCount++,
